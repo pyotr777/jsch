@@ -1,6 +1,194 @@
 ChangeLog of JSch
 ====================================================================
-Last modified: Tue Nov  2 11:59:57 JST 2010
+Last modified: Thu May  9 06:30:51 UTC 2013
+
+
+Changes since version 0.1.49:
+- bugfix: "verify: false" error on Java7u6(and later).  FIXED.
+          http://stackoverflow.com/questions/12279836/ssh-using-jschexception-verify-false-sometimes-fails
+          https://issues.apache.org/jira/browse/IVY-1374
+- bugfix: Session#setPortForwardingL(String bind_address,
+	                             int lport, String host, int rport)
+	  will not work for the long host name.         FIXED.
+- change: changed JSch#getIdentityRepository() to be public.
+- feature: added the following method to choose a canceled remote
+	   port-forwarding with the specified bind address,
+             Session#delPortForwardingR(String bind_address, int rport)
+- feature: added support for following OpenSSH's sftp extensions,
+             posix-rename@openssh.com,
+             statvfs@openssh.com,
+             hardlink@openssh.com,
+	   and some methods and a class to use those functionalities,
+             ChannelSftp#hardlink(String oldpath, String newpath),
+	     ChannelSftp#statVFS(String path)
+             SftpStatVFS
+- feature: added support for OpenSSH's configuration file,
+	     JSch#setConfigRepository(ConfigRepository configRepository)
+	     JSch#getConfigRepository()
+             OpenSSHConfig class
+             Session#getSession(String host)
+	   and added an example to demonstrate how to use it,
+	     examples/OpenSSHConfig.java
+	   OpenSSHConfig class will recognize the following keywords,
+             Host
+             User
+             Hostname
+             Port
+             PreferredAuthentications
+             IdentityFile
+             NumberOfPasswordPrompts
+             ConnectTimeout
+             HostKeyAlias
+             UserKnownHostsFile
+             KexAlgorithms
+             HostKeyAlgorithms
+             Ciphers
+             Macs
+             Compression
+             CompressionLevel
+             ForwardAgent
+             RequestTTY
+             ServerAliveInterval
+             LocalForward
+             RemoteForward
+             ClearAllForwardings
+- feature: added support for "diffie-hellman-group-exchange-sha256"
+- feature: allowed to use tilde(~) in the file name,
+             JSch#setIdentity(String prvkey, String pubkey)
+             JSch#setKnownHosts(String prvkey, String pubkey)
+- feature: added support for known_hosts file, which may include
+	   markers(@revoke) and comments.
+             HostKey(String host, int type, byte[] key, String comment)
+             HostKey(String marker, String host, int type,
+                     byte[] key, String comment)
+             HostKey#getComment()
+             HostKey#getMarker()
+- feature: added following methods to KeyPar class,
+             writePrivateKey(java.io.OutputStream out, byte[] passphrase)
+             writePrivateKey(String name, byte[] passphrase)
+- feature: allowed to set the connection timeout for the local port-forwarding,
+	   and added following methods,
+             Session#setPortForwardingL(String bind_address,
+                                        int lport, String host, int rport,
+                                        ServerSocketFactory ssf,
+                                        int connectTimeout)
+             ChannelDirectTCPIP#connect(int connectTimeout)
+- feature: added the following method to Session class
+	     getStreamForwarder(String host, int port)
+           and updated example/StreamForwarding.java to use that method.
+- feature: added following methods to Session class,
+             setPortForwardingL(String conf)
+             setPortForwardingR(String conf)
+- feature: allowed to have the session local HostkeyRepository,
+             Session#setHostKeyRepository(HostKeyRepository hostkeyRepository)
+             Session#getHostKeyRepository()
+- feature: added support for OpenSSH's local extension,
+	   "no-more-sessions@openssh.com" and the method,
+             Session#noMoreSessionChannels()
+
+
+Changes since version 0.1.48:
+- bugfix: Some sftp servers will sometimes fail to handle bulk requests,
+	  and whenever detecting such failures, we should re-send
+          requests again and again.                                    FIXED
+- bugfix: KeyPair#getFingerPrint() should return a fingerprint instead
+	  of keysize + " " + fingerprint.                              FIXED
+- bugfix: KeyPair#getKeySize() should return its key size.             FIXED
+- bugfix: SftpATTRS#isDir() should return false for unix domain
+	  socket files.                                                FIXED
+- change: improved the heuristics for the password prompt in
+	  the keyboard-interactive authentication.  It may not be
+	  started with "password:".
+- change: ChannelSftp#put(InputStream src, String dst) will not check
+	  if dst is directory or not, and if an exception is thrown,
+	  the check will be done.
+- change: if the compression is enabled without jzlib.jar,
+	  an exception will be thrown.
+- feature: JSch#addIdentity() and KeyPair#load() methods will accept
+	   Putty's private key files.
+	   Note that Putty encrypts its private key with "aes256-cbc".
+	   So, to handle such key files, "Java Cryptography
+	   Extension (JCE) Unlimited Strength Jurisdiction Policy Files"
+	   must be installed.
+- feature: hmac-sha2-256 defined in RFC6668 is supported.
+- feature: added following methods to KeyPair class,
+	   byte[] getSignature(byte[] data)
+	   Signature getVerifier()
+	   byte[] forSSHAgent()
+	   void setPublicKeyComment(String comment)
+- feature: added following methods to SftpATTR class,
+           boolean isChr()
+           boolean isBlk()
+           boolean isFifo()
+           boolean isSock()
+
+
+Changes since version 0.1.47:
+- change: the file transfer speed with ChannelSftp#get(String src) has been
+          improved; sending multiple requests at any one time.
+- change: by the default, at most, 16 requests will be sent at any one time
+          in ChannelSftp.
+- feature: added Session#{setIdentityRepository(),getIdentityRepository()}
+
+
+Changes since version 0.1.46:
+- bugfix: failed to initialize channels for the stream forwarding.     FIXED
+- change: Session#getHostKey() will return the given hostkey
+	  even if session is not established.
+- change: Logger will record additional messages about algorithm negotiations.
+- feature: added ChannelSftp#ls(String path, LsEntrySelector selector) method.
+- feature: added IdentityRepository#{getName(),getStatus()} methods.
+
+
+Changes since version 0.1.45:
+- bugfix: in the agent forwarding mode, "ssh-add -l" on the remote
+          will freeze.                                                 FIXED
+- bugfix: requests should not be sent to the closed channel.           FIXED
+- bugfix: ChannelShell#setAgentForwarding(true) will cause
+          resource leaks.                                              FIXED
+- change: for the efficiency, channel opening will be delayed
+          in local port forwarding.
+- change: added examples/Sudo.java to demonstrate sudo on exec channel.
+- change: authentication trials will be failed at 6 failures by the default.
+- change: updating copyright messages; 2011 -> 2012
+- feature: added JSch#setIdentityRepository(IdentityRepository irepo) to
+	   integrate with jsch-agent-proxy.
+
+	
+Changes since version 0.1.44:
+- bugfix: fields referred by multiple threads simultaneously should be
+	  volatile.                                                    FIXED 
+- bugfix: use local window size offered by the remote in sftp put.
+                                                                       FIXED 
+- bugfix: SftpProgressMonitor#init was not invoked in sftp-put
+	  for input-stream.                                            FIXED 
+- bugfix: sftp protocol version 3, 4 and 5 should allow only 
+	  UTF-8 encoding.                                              FIXED 
+- bugfix: Channel Subsystem had failed to set X forwarding flag.
+                                                                       FIXED 
+- bugfix: Channel X11 had leaked some resources.
+                                                                       FIXED 
+- bugfix: packet compression may break sessions
+	  in some case(transferring deflated data).                    FIXED 
+- bugfix: failed to set dev-null for logger
+                                                                       FIXED 
+- bugfix: even in sftp protocol version 3 session, some sftpd sends data
+	  packets defined in sftp protocol 6 ;-( working around it.    FIXED 
+- bugfix: ChannelSftp file globbing logic had missed 
+	  the string "foo\\\*bar" as a pattern.                        FIXED 
+- bugfix: sequential accesses to ChannelSftp by multiple threads may
+	  break its I/O channel.
+	  https://bugs.eclipse.org/bugs/show_bug.cgi?id=359184         FIXED 
+- bugfix: KeyPair.load can not handle private keys cyphered with AES.  FIXED
+- change: to improve sftp-put performance, send multiple packet at one time.
+- change: wait/notify will be used instead of sleep loop 
+          in establishing channel connections.
+- change: increasing local window size for sftp get.
+- change: updating copyright messages; 2010 -> 2011
+- change: src/com -> src/main/java/com
+- feature: key-exchange method "diffie-hellman-group14-sha1"
+	  (RFC4253#section-8.2)
+- feature: KeyPair#getPlulicKeyCommment() is added.
 
 	
 Changes since version 0.1.43:
